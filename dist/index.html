@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>职业规划大赛 AI 评语汇总</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --gemini-bg: #e8f0fe;
+            --gemini-border: #4285f4;
+            --gpt-bg: #e6fffa;
+            --gpt-border: #10a37f;
+            --text-color: #333;
+            --score-bg: #fff;
+            --score-text: #d32f2f;
+            --reason-color: #555;
+            --card-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            --border-radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: var(--text-color);
+            margin: 0;
+            padding: 16px;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 24px;
+            font-weight: 800;
+        }
+
+        h2.track-title {
+            background: linear-gradient(135deg, var(--primary-color), #4b6cb7);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px rgba(44, 62, 80, 0.2);
+            display: flex;
+            align-items: center;
+        }
+
+        h2.track-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        /* Accordion Style */
+        details {
+            background: #fff;
+            border-radius: var(--border-radius);
+            margin-bottom: 16px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            border: 1px solid #e1e4e8;
+            transition: box-shadow 0.2s ease;
+        }
+
+        details:hover {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+        }
+
+        summary {
+            padding: 16px 20px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #fff;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary:active {
+            background-color: #f5f5f5;
+        }
+
+        summary::after {
+            content: "+";
+            font-size: 1.5rem;
+            color: #bdc3c7;
+            font-weight: 300;
+            line-height: 1;
+            transition: transform 0.2s;
+        }
+
+        details[open] summary {
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        details[open] summary::after {
+            content: "+";
+            transform: rotate(45deg);
+        }
+
+        .content {
+            padding: 20px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Model Cards */
+        .model-card {
+            border-left: 5px solid #ccc;
+            padding: 16px;
+            margin-bottom: 24px;
+            border-radius: 0 8px 8px 0;
+            position: relative;
+        }
+
+        .model-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .gemini {
+            background-color: var(--gemini-bg);
+            border-left-color: var(--gemini-border);
+        }
+
+        .gpt {
+            background-color: var(--gpt-bg);
+            border-left-color: var(--gpt-border);
+        }
+
+        .model-name {
+            font-weight: 800;
+            display: inline-block;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background-color: rgba(255,255,255,0.6);
+        }
+
+        .gemini .model-name { color: #1967d2; border: 1px solid rgba(66, 133, 244, 0.2); }
+        .gpt .model-name { color: #0d7a5e; border: 1px solid rgba(16, 163, 127, 0.2); }
+
+        /* Metric Items */
+        .metric {
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed rgba(0,0,0,0.08);
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .label {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #444;
+        }
+
+        .score {
+            font-weight: 800;
+            color: var(--score-text);
+            background: var(--score-bg);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .reason {
+            font-size: 0.95rem;
+            color: var(--reason-color);
+            margin: 0;
+            text-align: justify;
+        }
+
+        .total-score .label {
+            font-size: 1rem;
+            color: #222;
+        }
+        
+        .total-score .score {
+            font-size: 1rem;
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 40px;
+            padding-bottom: 20px;
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 600px) {
+            body {
+                padding: 24px;
+            }
+            .content {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+            .model-card {
+                margin-bottom: 0;
+                height: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📋 职业规划大赛 AI 评语汇总</h1>
+
+        <!-- 赛道：就业赛道 -->
+        <h2 class="track-title">就业赛道</h2>
+
+        <!-- 选手：陈佳颖 -->
+        <details>
+            <summary>陈佳颖</summary>
+            <div class="content">
+                <!-- Gemini -->
+                <div class="model-card gemini">
+                    <span class="model-name">Gemini 3.0 Flash</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">5</span></div>
+                        <p class="reason">目标岗位明确且契合背景，但缺失对职业任职要求、工作内容及具体发展路径的调研描述。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">综合素质</span><span class="score">20</span></div>
+                        <p class="reason">提及沟通执行力与差异化思维，但仅为定性描述，缺乏具体校园活动或实践案例作为事实支撑。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">专业能力</span><span class="score">15</span></div>
+                        <p class="reason">虽强调学业排名及务实态度，但未展示具体的实习经历、专业技能工具及解决实际问题的成果。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">发展潜力</span><span class="score">5</span></div>
+                        <p class="reason">具备多路径职业选择的灵活性，但对持续学习的具体计划及应对未来不确定性的策略描述不足。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">45</span></div>
+                        <p class="reason">陈述逻辑较清晰，自我认知（EIA）与行业大环境有结合。但作为就业赛道选手，核心短板在于内容高度抽象化：一是职业调研浅表，未触及岗位实操层面；二是实践支撑极度匮乏，未能体现具体实习单位或项目中的专业胜任力；三是解决问题能力无文本支撑。整体更偏向理论性学业陈述，缺乏作为准职场人的实战经验展示。建议补充具体实习成果、技术工具及职业调研细节。</p>
+                    </div>
+                </div>
+
+                <!-- GPT -->
+                <div class="model-card gpt">
+                    <span class="model-name">GPT 5.2</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">6</span></div>
+                        <p class="reason">明确意向岗位，结合专业与产业趋势，但对岗位具体职责与路径描述不够深入。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">综合素质</span><span class="score">28</span></div>
+                        <p class="reason">体现自我认知、表达与成长意识，提及沟通执行和差异化，但缺乏具体事例支撑。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">专业能力</span><span class="score">20</span></div>
+                        <p class="reason">强调成绩与态度，未具体说明专业技能、实践或解决实际问题的真实经历。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">发展潜力</span><span class="score">8</span></div>
+                        <p class="reason">展现持续更新、自我调整与应对变化的意识，有一定韧性与学习意愿。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">62</span></div>
+                        <p class="reason">陈述整体逻辑清晰，职业目标方向明确，能结合产业趋势与自我认知，但岗位调研、专业技能与实践案例不足，多停留在理念与态度层面，岗位胜任力尤其是专业能力支撑不够具体，整体达到中等偏上水平。</p>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- 选手：牧筱宇 -->
+        <details>
+            <summary>牧筱宇</summary>
+            <div class="content">
+                <!-- Gemini -->
+                <div class="model-card gemini">
+                    <span class="model-name">Gemini 3.0 Flash</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">9</span></div>
+                        <p class="reason">目标清晰，紧扣国家战略及行业缺口，结合校企合作背景，调研详实且岗位定位精准。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">综合素质</span><span class="score">34</span></div>
+                        <p class="reason">通过优化工期的实例展现了极强的执行力与效率意识，具备良好的团队协作与职业奉献精神。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">专业能力</span><span class="score">35</span></div>
+                        <p class="reason">学业优异，具备建模、编程等技能，且拥有真实的升压站实习经历，能够解决实际生产问题。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">发展潜力</span><span class="score">8</span></div>
+                        <p class="reason">三期计划具体可行，展现了持续学习（如C语言）的意愿及向技术专家发展的职业进取心。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">86</span></div>
+                        <p class="reason">选手陈述逻辑清晰，岗位匹配度高。其职业目标设定科学，充分结合了新质生产力背景与个人专业背景；岗位胜任力方面，通过具体的建模计算案例与实习实战成果，有力证明了专业知识转化能力及高效的执行力。发展规划分阶段递进，具备较强的可操作性。建议在未来进一步挖掘应对行业不确定性及复杂技术挑战的心理韧性描述，以完善职业画像。</p>
+                    </div>
+                </div>
+
+                <!-- GPT -->
+                <div class="model-card gpt">
+                    <span class="model-name">GPT 5.2</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">9</span></div>
+                        <p class="reason">目标明确，紧贴新能源行业趋势，结合专业背景与就业市场，有具体企业与岗位指向。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">综合素质</span><span class="score">34</span></div>
+                        <p class="reason">体现较强学习能力、执行力与团队协作精神，有实习与项目中主动解决问题的表现。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">专业能力</span><span class="score">36</span></div>
+                        <p class="reason">专业成绩突出，具备科研、实习与技能训练经历，能具体说明技术实践与成效。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">发展潜力</span><span class="score">9</span></div>
+                        <p class="reason">展现出清晰分阶段规划、持续学习意愿及对行业发展的理性判断与适应意识。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">88</span></div>
+                        <p class="reason">选手围绕新能源自动化电气工程师目标，系统阐述了行业背景、岗位选择、实践经历与阶段规划。陈述内容真实具体，专业匹配度高，实践与能力支撑充分，展现良好综合素养与发展潜力，整体表现达到就业赛道高水平。</p>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- 选手：吕豪乐 -->
+        <details>
+            <summary>吕豪乐</summary>
+            <div class="content">
+                <!-- Gemini -->
+                <div class="model-card gemini">
+                    <span class="model-name">Gemini 3.0 Flash</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">6</span></div>
+                        <p class="reason">目标设定契合专业背景，但未体现就业市场需求调研，对岗位工作流程及具体任职要求描述较模糊。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">综合素质</span><span class="score">32</span></div>
+                        <p class="reason">通过监考及志愿者经历体现了良好的沟通协调、执行力及奉献精神，性格特质与销售岗位匹配度较高。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">专业能力</span><span class="score">24</span></div>
+                        <p class="reason">具备本专业基础知识，但缺乏与目标岗位相关的真实实习经历，未能展示利用专业技能解决实际问题的案例。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">发展潜力</span><span class="score">7</span></div>
+                        <p class="reason">职业规划路径清晰，展现了较强的学习意愿与适应潜力，但在创新意识及应对行业变化的韧性上体现不足。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">69</span></div>
+                        <p class="reason">选手自我认知清晰，性格特质与电气销售岗位所需素质较为契合。通过丰富的校园实践展现了良好的通用能力。然而，职业目标缺乏深度市场调研，专业能力部分偏重理论列举，缺乏行业实战支撑，导致岗位胜任力的说服力不足。职业规划虽有阶段划分，但具体执行措施较为通用，建议进一步结合行业趋势细化发展路径，并补充高含金量的专业实习。</p>
+                    </div>
+                </div>
+
+                <!-- GPT -->
+                <div class="model-card gpt">
+                    <span class="model-name">GPT 5.2</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">7</span></div>
+                        <p class="reason">明确提出电气类产品销售工程师目标，描述发展路径，但对岗位具体要求与市场分析较浅。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">综合素质</span><span class="score">26</span></div>
+                        <p class="reason">多次强调沟通、协调、责任心与志愿服务经历，体现一定职业素养，但缺乏具体成果支撑。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">专业能力</span><span class="score">18</span></div>
+                        <p class="reason">说明所学专业与课程内容，但未结合实践展示解决实际电气或销售问题的能力。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">发展潜力</span><span class="score">7</span></div>
+                        <p class="reason">规划了清晰的中长期发展目标，体现进取意愿，但对持续学习与创新应对描述有限。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">58</span></div>
+                        <p class="reason">选手职业目标较为明确，与专业背景相关，具有一定沟通与服务实践经历，展现基础职业素养与发展规划。但岗位调研深度不足，专业能力与实际问题解决案例较少，对销售岗位核心能力呈现偏弱，整体处于中等水平。</p>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- 赛道：成长赛道 -->
+        <h2 class="track-title">成长赛道</h2>
+
+        <!-- 选手：李晨昊 -->
+        <details>
+            <summary>李晨昊</summary>
+            <div class="content">
+                <!-- Gemini -->
+                <div class="model-card gemini">
+                    <span class="model-name">Gemini 3.0 Flash</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">26</span></div>
+                        <p class="reason">目标紧扣低空经济国家战略，专业契合度高，能结合个人特长分析岗位差距，定位准确且科学。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">30</span></div>
+                        <p class="reason">行动计划涵盖考证与软件学习，方向明确；但缺乏已取得的阶段性标志性成果及具体实践数据支撑。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">14</span></div>
+                        <p class="reason">具备复盘意识与动态调整思维，针对技术革新提出了备选预案，但对当前行动的反思深度略显不足。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">70</span></div>
+                        <p class="reason">选手能将个人爱好与电力专业深度融合，精准捕捉“低空经济”下的职业机会，职业目标符合国家发展需要。规划逻辑清晰，行动方案具有针对性。不足之处在于：作为成长赛道选手，陈述内容偏重于“未来计划”，缺乏对“已取得成果”（如竞赛获奖、已获证书、社会实践记录）的实证展示，难以体现向职业目标靠近的实际进展。建议加强对过往实践成效的量化描述，增强规划的落地感。</p>
+                    </div>
+                </div>
+
+                <!-- GPT -->
+                <div class="model-card gpt">
+                    <span class="model-name">GPT 5.2</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">26</span></div>
+                        <p class="reason">目标聚焦电力无人机巡检，契合低空经济与专业背景，差距分析与规划较清晰</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">32</span></div>
+                        <p class="reason">提出考证与学习规划，但尚未陈述已完成的实践成果或具体落地经验</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">16</span></div>
+                        <p class="reason">有定期复盘与备选调整思路，但反思内容偏原则性，具体实例不足</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">74</span></div>
+                        <p class="reason">整体规划紧扣电力专业与低空经济国家需求，职业目标明确，行业理解到位，成长路径较为合理。但学习实践多停留在计划层面，缺乏已取得的标志性成果支撑，反思与优化较为概括，需通过实际行动与成效进一步提升规划成熟度。</p>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- 选手：郭晶晶 -->
+        <details>
+            <summary>郭晶晶</summary>
+            <div class="content">
+                <!-- Gemini -->
+                <div class="model-card gemini">
+                    <span class="model-name">Gemini 3.0 Flash</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">24</span></div>
+                        <p class="reason">目标契合国家战略，定位清晰，且基于专业制定了分阶段路径，但对自身与岗位的量化差距分析较简略。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">28</span></div>
+                        <p class="reason">规划了“学练赛用”体系，逻辑完整。但陈述中缺乏已取得的实质性成果支撑，多为未来计划，行动证明显不足。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">18</span></div>
+                        <p class="reason">以“飞线事件”为切入点，反思深刻且具针对性，展现了极强的自我评估意识与职业素养，动态调整机制明确。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">70</span></div>
+                        <p class="reason">选手展现了优秀的职业素养和深刻的自我反思能力，职业目标明确且具有社会价值。通过“登山图”和“双轮驱动”构建了清晰的成长路径。然而，成长赛道强调已有的学习实践成效，选手的陈述内容过度偏重于“未来规划”，对大一至今已获得的阶段性、标志性成果（如奖项、证书、项目实际进展）缺乏文本支撑，导致行动力维度的说服力受限。建议后续加强对已完成行动成果的量化展示，以支撑规划的可落地性。</p>
+                    </div>
+                </div>
+
+                <!-- GPT -->
+                <div class="model-card gpt">
+                    <span class="model-name">GPT 5.2</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">24</span></div>
+                        <p class="reason">职业目标明确，联系中国制造需求，路径清晰，但行业与岗位差距分析偏概括</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">20</span></div>
+                        <p class="reason">规划详尽但多为计划性表述，缺乏已取得的具体实践成果与证明</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">16</span></div>
+                        <p class="reason">反思意识强，有复盘与调整思路，但尚未体现基于实践的调整实例</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">60</span></div>
+                        <p class="reason">选手职业目标定位清晰，价值导向正确，规划逻辑完整，能从个人经历中反思不足并提出改进方法。但整体陈述以未来规划为主，缺乏已完成的学习实践成果与阶段性成效支撑，实践深度与验证性不足，影响成长赛道评分。</p>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- 选手：武思含 -->
+        <details>
+            <summary>武思含</summary>
+            <div class="content">
+                <!-- Gemini -->
+                <div class="model-card gemini">
+                    <span class="model-name">Gemini 3.0 Flash</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">18</span></div>
+                        <p class="reason">职业目标清晰，结合了行业现状及SWOT分析，但对目标岗位差距分析及具体匹配路径研究不够深入。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">15</span></div>
+                        <p class="reason">行动计划较为笼统，仅按年级罗列常规任务，缺乏具体的竞赛、证书或项目实践等标志性成果支撑。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">8</span></div>
+                        <p class="reason">评估调整逻辑简单，未体现基于实践结果的深度反思，缺乏针对不足的具体优化策略及动态调整机制。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">41</span></div>
+                        <p class="reason">选手职业定位基本准确，能将个人志向与电气行业需求相结合。但整体规划深度不足，陈述内容多为宽泛的愿望而非具体行动证据。尤其在“学习实践行动”维度，未能展示出已取得的标志性阶段成果，无法体现职业竞争力的实质性提升；在“优化改进”部分，缺乏对自我成长过程的科学评估与闭环反馈，规划的科学性与落地感较弱。</p>
+                    </div>
+                </div>
+
+                <!-- GPT -->
+                <div class="model-card gpt">
+                    <span class="model-name">GPT 5.2</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">16</span></div>
+                        <p class="reason">目标指向电气工程师，符合专业与行业需求，但与国家需求结合不深，目标表述较笼统。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">15</span></div>
+                        <p class="reason">仅提出学习与参与活动计划，未提供具体实践成果、竞赛、实习或证书等支撑。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">6</span></div>
+                        <p class="reason">有简单调整表述，但缺乏对已有学习实践成效的反思与具体改进行动。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">37</span></div>
+                        <p class="reason">整体规划结构完整，职业方向与专业基本匹配，具备一定自我认知与行业了解。但内容多停留在理念和计划层面，缺乏具体、量化的学习实践成果与反思，成长进展证据不足，动态调整较为概括。</p>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- 选手：田熙玥 -->
+        <details>
+            <summary>田熙玥</summary>
+            <div class="content">
+                <!-- Gemini -->
+                <div class="model-card gemini">
+                    <span class="model-name">Gemini 3.0 Flash</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">24</span></div>
+                        <p class="reason">目标明确，结合国家战略及地方产业，趋势分析较好；但对岗位胜任力差距的剖析深度稍显不足。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">30</span></div>
+                        <p class="reason">学习计划清晰，但专业实践成果较单薄，缺乏核心技术竞赛或标志性专业成果支撑，职业针对性有待加强。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">12</span></div>
+                        <p class="reason">提出了评估机制与动态调整逻辑，但缺乏实际过程中的反馈案例及具体的路径修正细节。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">66</span></div>
+                        <p class="reason">选手职业目标与地方经济及行业趋势结合紧密，职业价值观正确，陈述逻辑完整。扣分点在于：第一，学习实践部分缺乏与电力电子工程师核心能力挂钩的标志性成果（如专业竞赛获奖或具体项目落地），成果多集中于通用素质类荣誉；第二，优化改进环节仅有方法论描述，未见基于实际成长反馈的动态调整实例；第三，行动路径的独特性不足，未充分体现学校育人特色及专业资源的利用深度。</p>
+                    </div>
+                </div>
+
+                <!-- GPT -->
+                <div class="model-card gpt">
+                    <span class="model-name">GPT 5.2</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">22</span></div>
+                        <p class="reason">目标明确，结合电气专业与区域产业需求，但岗位差距分析不够具体。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">28</span></div>
+                        <p class="reason">提及学生工作、实训与实习规划，实际标志性成果与量化进展不足。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">12</span></div>
+                        <p class="reason">有自我反思与转变描述，但动态调整措施较笼统，缺乏实例。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">62</span></div>
+                        <p class="reason">陈述体现正确就业观与较清晰职业方向，具备一定自我认知和行动意识，但学习实践成果较少、可验证证据不足，成长路径与优化调整仍偏概念化，整体达到中等水平。</p>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- 选手：吕瑞琪 -->
+        <details>
+            <summary>吕瑞琪</summary>
+            <div class="content">
+                <!-- Gemini -->
+                <div class="model-card gemini">
+                    <span class="model-name">Gemini 3.0 Flash</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">26</span></div>
+                        <p class="reason">目标紧扣“双碳”战略，行业趋势分析客观，自我认知工具应用合理，且明确了岗位差距与成长路径。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">32</span></div>
+                        <p class="reason">虽有奖学金及干部经历，但缺乏电力电子相关高水平竞赛或科研项目支撑，标志性专业成果及实习证据不足。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">14</span></div>
+                        <p class="reason">识别了软件及理论短板并提出改进方向，但对职业目标动态调整的具体逻辑及过往调整案例描述较模糊。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">72</span></div>
+                        <p class="reason">选手职业目标明确，能将个人理想有效融入国家发展战略，展现了较强的职业认同感。在自我认知和行业调研方面表现扎实，逻辑清晰。然而，作为成长赛道选手，其学习实践行动部分多集中于通识素质和校内荣誉，缺乏与电气自动化专业核心能力（如特定技能竞赛、行业实训、初级资格证书）高度相关的阶段性产出。在优化改进维度，虽然建立了反馈机制，但针对专业短板的改进措施略显通用。建议未来加强在专业细分领域（如PLC、新能源系统运维）的实操成果积累，以增强规划的可信度与竞争力。</p>
+                    </div>
+                </div>
+
+                <!-- GPT -->
+                <div class="model-card gpt">
+                    <span class="model-name">GPT 5.2</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">26</span></div>
+                        <p class="reason">职业目标明确，紧密结合双碳战略与新能源发展，分析自我与行业匹配度，但岗位能力差距分析仍偏概括。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">32</span></div>
+                        <p class="reason">有学习投入、学生工作与志愿服务等实践，但与新能源电气工程师直接相关的实训、项目或证书成果不足。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">16</span></div>
+                        <p class="reason">能清晰反思自身专业深度与软件能力不足，并提出改进措施和阶段性自评，调整意识较强。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">74</span></div>
+                        <p class="reason">整体规划方向正确，职业定位与国家战略和专业背景契合度高，目标清晰、路径完整。但支撑职业目标的标志性专业实践成果和行业对接案例较少，学习行动仍偏基础性，需在后续强化专业项目、实训或证书等硬性成果。</p>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- 选手：高安萍 -->
+        <details>
+            <summary>高安萍</summary>
+            <div class="content">
+                <!-- Gemini -->
+                <div class="model-card gemini">
+                    <span class="model-name">Gemini 3.0 Flash</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">24</span></div>
+                        <p class="reason">目标契合国家双碳战略，行业分析透彻，紧扣专业且认知清晰，准确识别学历提升这一关键差距。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">35</span></div>
+                        <p class="reason">行动计划与目标高度匹配，涵盖课程、考证及实习。但缺乏已取得的标志性成果或高水平竞赛奖项支撑。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">16</span></div>
+                        <p class="reason">具备风险预警意识，针对考证、技术适配及专升本挑战制定了调整策略，体现了动态优化的思维。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">75</span></div>
+                        <p class="reason">该选手职业规划逻辑严密，职业目标与国家电力发展需求紧密结合，展现了扎实的专业认知和较强的实践意愿。在学习实践环节，虽有明确的阶段性规划，但目前陈述中支撑职业目标的标志性、阶段性成果（如已获证书、获奖等）略显单薄。建议进一步强化已取得成果的展示，并深化对职场复杂环境下的自我反思与调整力度。</p>
+                    </div>
+                </div>
+
+                <!-- GPT -->
+                <div class="model-card gpt">
+                    <span class="model-name">GPT 5.2</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">23</span></div>
+                        <p class="reason">目标明确，对接国家电网与双碳战略，分析行业趋势，但岗位差距分析仍偏概括。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">34</span></div>
+                        <p class="reason">有清晰学习与实训安排，但实际成果多为规划描述，已取得证书或实习成效较少。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">15</span></div>
+                        <p class="reason">具备风险意识与调整思路，但反思深度和已有调整实例不足。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">72</span></div>
+                        <p class="reason">整体规划逻辑清晰，职业目标契合国家需求，行动路径较具体，但实践成果和反思多停留在计划层面，缺少已完成的标志性成果支撑，仍处于规划导向型阶段。</p>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- 选手：刘艺欣 -->
+        <details>
+            <summary>刘艺欣</summary>
+            <div class="content">
+                <!-- Gemini -->
+                <div class="model-card gemini">
+                    <span class="model-name">Gemini 3.0 Flash</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">22</span></div>
+                        <p class="reason">目标结合国家智能制造战略，定位清晰。但胜任力差距分析流于表面，侧重性格描述而非专业技能评估。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">20</span></div>
+                        <p class="reason">严重缺乏已取得的标志性成果。陈述多为“将要”进行的计划，未见具体赛项、证书或项目落地的实证支撑。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">11</span></div>
+                        <p class="reason">有自我反思但维度单一，主要集中于生活习惯改进（如手机依赖），缺乏对职业发展路径的深度动态调整。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">53</span></div>
+                        <p class="reason">选手职业目标明确，能将个人理想与“十四五”智能制造规划等国家需求相结合，专业契合度高。但在成长赛道的核心考查点“学习实践行动”上表现薄弱，陈述内容大多处于“计划”阶段，未能展示出入校以来取得的阶段性、成果性证据（如已考取的证书、参与的工程实践或竞赛奖项），导致规划的落地感不足。同时，自我反思更多停留于克服性格弱点，缺乏从职业技能反馈角度进行的深度优化，整体内容的竞争力和扎实度有待提升。</p>
+                    </div>
+                </div>
+
+                <!-- GPT -->
+                <div class="model-card gpt">
+                    <span class="model-name">GPT 5.2</span>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">职业目标</span><span class="score">22</span></div>
+                        <p class="reason">目标岗位明确，结合国家智能制造需求，分析行业趋势，但个人能力差距拆解不够细化。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">学习实践行动</span><span class="score">26</span></div>
+                        <p class="reason">有清晰学习与考证计划，但仅停留在规划层面，缺乏已完成的实践成果与具体案例支撑。</p>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-header"><span class="label">优化改进</span><span class="score">15</span></div>
+                        <p class="reason">能较深入反思自身问题并提出改进路径，但动态调整和实际验证成效尚未体现。</p>
+                    </div>
+                    <div class="metric total-score">
+                        <div class="metric-header"><span class="label">总分</span><span class="score">63</span></div>
+                        <p class="reason">整体规划逻辑完整，职业认知与国家需求结合较好，目标清晰、反思到位。但学习实践证据不足，标志性成果缺失，计划多于行动，需通过实际项目、竞赛或实习成果增强说服力。</p>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <div class="footer">
+            Generated based on provided evaluation data.
+        </div>
+    </div>
+
+</body>
+</html>
+
